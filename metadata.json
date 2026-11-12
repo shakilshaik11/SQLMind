@@ -1,0 +1,6 @@
+{
+  "name": "SQLMind",
+  "description": "Translate natural language to SQL and vice versa, learn SQL concepts A-Z, take quiz challenges, and save history with Firebase cloud sync.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
