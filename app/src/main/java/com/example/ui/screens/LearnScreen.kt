@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,6 +30,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -35,6 +38,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,12 +52,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.LearningData
 import com.example.data.Lesson
-import com.example.data.LessonLevel
 import com.example.ui.viewmodel.AppScreen
 import com.example.ui.viewmodel.SqlViewModel
 import com.example.ui.viewmodel.TranslationMode
@@ -67,23 +69,8 @@ fun LearnScreen(viewModel: SqlViewModel) {
     val completedCount = completedIds.size
     val progressFraction = if (totalLessons > 0) completedCount.toFloat() / totalLessons.toFloat() else 0f
 
-    // Calculate level-specific completion statistics
-    val basicLessons = remember { LearningData.lessons.filter { it.level == LessonLevel.BASIC } }
-    val moderateLessons = remember { LearningData.lessons.filter { it.level == LessonLevel.MODERATE } }
-    val advancedLessons = remember { LearningData.lessons.filter { it.level == LessonLevel.ADVANCED } }
-
-    val basicCompleted = basicLessons.count { completedIds.contains(it.id) }
-    val moderateCompleted = moderateLessons.count { completedIds.contains(it.id) }
-    val advancedCompleted = advancedLessons.count { completedIds.contains(it.id) }
-
-    var selectedLevelFilter by remember { mutableStateOf<LessonLevel?>(null) } // null = All
     var activeLesson by remember { mutableStateOf<Lesson?>(null) }
     val scrollState = rememberScrollState()
-
-    val displayedLessons = remember(selectedLevelFilter) {
-        if (selectedLevelFilter == null) LearningData.lessons
-        else LearningData.lessons.filter { it.level == selectedLevelFilter }
-    }
 
     ResponsiveContainer(
         modifier = Modifier
@@ -111,20 +98,20 @@ fun LearnScreen(viewModel: SqlViewModel) {
                     ) {
                         Column {
                             Text(
-                                text = "SQL Master Trail",
+                                text = "SQL Course Trail",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = "24 Comprehensive Sessions: Basic, Moderate & Advanced",
+                                text = "Master local DBs, Subqueries & Joins A to Z",
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         Icon(
                             imageVector = Icons.Default.School,
-                            contentDescription = "Learning Academy",
+                            contentDescription = "Learning Class",
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(28.dp)
                         )
@@ -138,7 +125,7 @@ fun LearnScreen(viewModel: SqlViewModel) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Overall Progress",
+                            text = "Course Progress",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -162,93 +149,22 @@ fun LearnScreen(viewModel: SqlViewModel) {
                         color = MaterialTheme.colorScheme.secondary,
                         trackColor = MaterialTheme.colorScheme.surfaceVariant
                     )
-
-                    Spacer(Modifier.height(14.dp))
-
-                    // Level Progress Badges
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        LevelMiniStatCard(
-                            title = "Basic",
-                            completed = basicCompleted,
-                            total = basicLessons.size,
-                            color = Color(LessonLevel.BASIC.badgeColor),
-                            modifier = Modifier.weight(1f)
-                        )
-                        LevelMiniStatCard(
-                            title = "Moderate",
-                            completed = moderateCompleted,
-                            total = moderateLessons.size,
-                            color = Color(LessonLevel.MODERATE.badgeColor),
-                            modifier = Modifier.weight(1f)
-                        )
-                        LevelMiniStatCard(
-                            title = "Advanced",
-                            completed = advancedCompleted,
-                            total = advancedLessons.size,
-                            color = Color(LessonLevel.ADVANCED.badgeColor),
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
                 }
-            }
-
-            Spacer(Modifier.height(10.dp))
-
-            // --- Level Filter Selector Tabs ---
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                LevelFilterChip(
-                    label = "All (${totalLessons})",
-                    isSelected = selectedLevelFilter == null,
-                    activeColor = MaterialTheme.colorScheme.primary,
-                    onClick = { selectedLevelFilter = null },
-                    modifier = Modifier.weight(1f)
-                )
-                LevelFilterChip(
-                    label = "Basic (${basicLessons.size})",
-                    isSelected = selectedLevelFilter == LessonLevel.BASIC,
-                    activeColor = Color(LessonLevel.BASIC.badgeColor),
-                    onClick = { selectedLevelFilter = LessonLevel.BASIC },
-                    modifier = Modifier.weight(1f)
-                )
-                LevelFilterChip(
-                    label = "Moderate (${moderateLessons.size})",
-                    isSelected = selectedLevelFilter == LessonLevel.MODERATE,
-                    activeColor = Color(LessonLevel.MODERATE.badgeColor),
-                    onClick = { selectedLevelFilter = LessonLevel.MODERATE },
-                    modifier = Modifier.weight(1.05f)
-                )
-                LevelFilterChip(
-                    label = "Advanced (${advancedLessons.size})",
-                    isSelected = selectedLevelFilter == LessonLevel.ADVANCED,
-                    activeColor = Color(LessonLevel.ADVANCED.badgeColor),
-                    onClick = { selectedLevelFilter = LessonLevel.ADVANCED },
-                    modifier = Modifier.weight(1.05f)
-                )
             }
 
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = if (selectedLevelFilter == null) "All Learning Sessions"
-                       else "${selectedLevelFilter!!.displayName} Level Sessions (${displayedLessons.size})",
+                text = "Course Modules",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(vertical = 4.dp)
             )
 
-            // --- Lesson Cards List ---
-            displayedLessons.forEach { lesson ->
+            // --- Course index listed A-Z ---
+            LearningData.lessons.forEach { lesson ->
                 val isCompleted = completedIds.contains(lesson.id)
-                val badgeColor = Color(lesson.level.badgeColor)
 
                 Card(
                     modifier = Modifier
@@ -265,7 +181,7 @@ fun LearnScreen(viewModel: SqlViewModel) {
                     border = BorderStrokeWrapper(
                         1.dp,
                         if (isCompleted) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f)
-                        else badgeColor.copy(alpha = 0.25f)
+                        else MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                     )
                 ) {
                     Row(
@@ -277,14 +193,14 @@ fun LearnScreen(viewModel: SqlViewModel) {
                             modifier = Modifier.weight(1f),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Circular Indicator for Module ID
+                            // Circular Indicator for Module id
                             Box(
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .size(32.dp)
                                     .clip(CircleShape)
                                     .background(
                                         if (isCompleted) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)
-                                        else badgeColor.copy(alpha = 0.18f)
+                                        else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -292,38 +208,14 @@ fun LearnScreen(viewModel: SqlViewModel) {
                                     text = lesson.id,
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (isCompleted) MaterialTheme.colorScheme.tertiary else badgeColor
+                                    color = if (isCompleted) MaterialTheme.colorScheme.tertiary
+                                    else MaterialTheme.colorScheme.primary
                                 )
                             }
 
                             Spacer(Modifier.width(12.dp))
 
                             Column {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    // Level tag pill
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .background(badgeColor.copy(alpha = 0.15f))
-                                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                                    ) {
-                                        Text(
-                                            text = lesson.level.displayName.uppercase(),
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = badgeColor
-                                        )
-                                    }
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(
-                                        text = lesson.category,
-                                        fontSize = 10.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                                    )
-                                }
-
-                                Spacer(Modifier.height(3.dp))
-
                                 Text(
                                     text = lesson.title,
                                     fontSize = 13.sp,
@@ -332,7 +224,7 @@ fun LearnScreen(viewModel: SqlViewModel) {
                                 )
                                 Text(
                                     text = lesson.summary,
-                                    fontSize = 11.sp,
+                                    fontSize = 10.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 1
                                 )
@@ -347,7 +239,7 @@ fun LearnScreen(viewModel: SqlViewModel) {
                             tint = if (isCompleted) MaterialTheme.colorScheme.tertiary
                             else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
                             modifier = Modifier
-                                .size(22.dp)
+                                .size(20.dp)
                                 .clickable {
                                     viewModel.toggleLessonCompleted(lesson.id, isCompleted)
                                 }
@@ -360,7 +252,6 @@ fun LearnScreen(viewModel: SqlViewModel) {
             // --- Lesson Detail View ---
             val lesson = activeLesson!!
             val isCompleted = completedIds.contains(lesson.id)
-            val badgeColor = Color(lesson.level.badgeColor)
 
             // Back button
             Row(
@@ -388,7 +279,7 @@ fun LearnScreen(viewModel: SqlViewModel) {
                     containerColor = MaterialTheme.colorScheme.surface
                 ),
                 shape = RoundedCornerShape(18.dp),
-                border = BorderStrokeWrapper(1.dp, badgeColor.copy(alpha = 0.25f))
+                border = BorderStrokeWrapper(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.18f))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(
@@ -396,36 +287,12 @@ fun LearnScreen(viewModel: SqlViewModel) {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(badgeColor.copy(alpha = 0.15f))
-                                        .padding(horizontal = 8.dp, vertical = 3.dp)
-                                ) {
-                                    Text(
-                                        text = "${lesson.level.displayName.uppercase()} LEVEL",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = badgeColor
-                                    )
-                                }
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    text = lesson.category,
-                                    fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Spacer(Modifier.height(6.dp))
-                            Text(
-                                text = "Session ${lesson.id}: ${lesson.title}",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
+                        Text(
+                            text = "Lesson ${lesson.id}: ${lesson.title}",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
 
                     Spacer(Modifier.height(10.dp))
@@ -441,7 +308,7 @@ fun LearnScreen(viewModel: SqlViewModel) {
 
             // Code Example Card
             Text(
-                text = "Practical Execution Query",
+                text = "Practical Execution Example",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -449,8 +316,8 @@ fun LearnScreen(viewModel: SqlViewModel) {
 
             CodeTerminalBlock(
                 code = lesson.exampleQuery,
-                label = "SQL QUERY (${lesson.id})",
-                titleColor = badgeColor
+                label = "EXAMPLE SQL",
+                titleColor = MaterialTheme.colorScheme.secondary
             )
 
             // Example Result description
@@ -496,12 +363,14 @@ fun LearnScreen(viewModel: SqlViewModel) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // TRY IN TRANSLATOR
+                // TRY IN TRANSLATOR (Ties sections together beautifully!)
                 Button(
                     onClick = {
+                        // Load query into translator and pivot screen!
                         viewModel.sqlInput.value = lesson.exampleQuery
                         viewModel.translationMode.value = TranslationMode.SQL_TO_NL
                         viewModel.currentScreen.value = AppScreen.TRANSLATE
+                        // Auto fire translate immediately for seamless wizard UX!
                         viewModel.performTranslation()
                     },
                     modifier = Modifier
@@ -554,71 +423,5 @@ fun LearnScreen(viewModel: SqlViewModel) {
                 }
             }
         }
-    }
-}
-
-@Composable
-fun LevelMiniStatCard(
-    title: String,
-    completed: Int,
-    total: Int,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(10.dp))
-            .background(color.copy(alpha = 0.1f))
-            .border(1.dp, color.copy(alpha = 0.25f), RoundedCornerShape(10.dp))
-            .padding(horizontal = 8.dp, vertical = 6.dp)
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = title,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                color = color
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = "$completed/$total",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-    }
-}
-
-@Composable
-fun LevelFilterChip(
-    label: String,
-    isSelected: Boolean,
-    activeColor: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(10.dp))
-            .background(
-                if (isSelected) activeColor.copy(alpha = 0.18f)
-                else MaterialTheme.colorScheme.surface
-            )
-            .border(
-                width = 1.dp,
-                color = if (isSelected) activeColor else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-                shape = RoundedCornerShape(10.dp)
-            )
-            .clickable(onClick = onClick)
-            .padding(vertical = 8.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = label,
-            fontSize = 11.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-            color = if (isSelected) activeColor else MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
